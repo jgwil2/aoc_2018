@@ -32,11 +32,5 @@ containsXOfAnyLetter x str =
 groupLetters :: String -> Array (NEA.NonEmptyArray String)
 groupLetters str = groupBy (==) <<< sort $ split (Pattern "") str
 
-contains2OfAnyLetter :: String -> Boolean
-contains2OfAnyLetter = containsXOfAnyLetter 2
-
-contains3OfAnyLetter :: String -> Boolean
-contains3OfAnyLetter = containsXOfAnyLetter 3
-
 getNumberOfWordsContainingXLetters :: Int -> Array String -> Int
 getNumberOfWordsContainingXLetters x words = length $ filter ((==) true) $ map (containsXOfAnyLetter x) words

@@ -16,7 +16,10 @@ main :: Effect Unit
 main = do
   text <- readFileAsUTF8 "day1.txt"
   nums <- pure ((map fromStringSafe <<< splitTextByNewline) text)
-  log $ show (getFirstRepeating (getRunningTotal nums [0]))
+  log "Part 1:"
+  log $ show $ sum nums
+  log "Part 2:"
+  log $ show $ getFirstRepeating (getRunningTotal nums [0])
 
 readFileAsUTF8 :: String -> Effect String
 readFileAsUTF8 = readTextFile UTF8

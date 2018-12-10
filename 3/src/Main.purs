@@ -2,8 +2,8 @@ module Main where
 
 import Prelude
 
-import Data.Array (unsafeIndex, (..))
-import Data.Array.NonEmpty (toArray)
+import Data.Array (concatMap, filter, group, length, sort, unsafeIndex, (..))
+import Data.Array.NonEmpty (length, toArray) as NEA
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
@@ -23,10 +23,9 @@ main = do
   text <- readFileAsUTF8 "day3.txt"
   words <- pure $ splitTextByNewline text
   log "Part 1:"
-  claims <- pure $ map getClaimFromString words
-  points <- pure $ map getPointsFromClaim claims
-  log $ show points
-  -- points :: Array (Array Point)
+  totalPoints <- pure $ concatMap getPointsFromString words
+  groupedPoints <- pure $ group $ sort totalPoints
+  log $ show $ length $ filter (\x -> 1 /= NEA.length x) groupedPoints
 
 readFileAsUTF8 :: String -> Effect String
 readFileAsUTF8 = readTextFile UTF8
@@ -58,15 +57,17 @@ getSafeNum :: Maybe Int -> Int
 getSafeNum (Just x) = x
 getSafeNum Nothing = 0
 
-getSafeArray :: ∀ a. Maybe (NonEmptyArray a) -> Array a
-getSafeArray (Just xs) = toArray xs
-getSafeArray Nothing = []
+getSafeArrayfromNonEmpty :: ∀ a. Maybe (NonEmptyArray a) -> Array a
+getSafeArrayfromNonEmpty (Just xs) = NEA.toArray xs
+getSafeArrayfromNonEmpty Nothing = []
 
 fromStringSafe :: String -> Int
 fromStringSafe = getSafeNum <<< fromString
 
-getClaimFromString :: String -> Claim
-getClaimFromString = getClaimFromArray <<< map getSafeString <<< getSafeArray <<< matchRecord
+getPointsFromString :: String -> Array Point
+getPointsFromString =
+  getPointsFromClaim <<< getClaimFromArray <<< map getSafeString <<<
+  getSafeArrayfromNonEmpty <<< matchRecord
 
 getClaimFromArray :: Array String -> Claim
 getClaimFromArray xs = {
@@ -88,10 +89,18 @@ instance showPoint :: Show Point where
 instance eqPoint :: Eq Point where
   eq (Point p) (Point q) = p.x == q.x && p.y == q.y
 
+instance ordPoint :: Ord Point where
+  compare (Point p) (Point q)
+    | p.x > q.x = GT
+    | p.x < q.x = LT
+    | p.x == q.x && p.y > q.y = GT
+    | p.x == q.x && p.y < q.y = LT
+  compare _ _ = EQ
+
 getPointsFromClaim :: Claim -> Array Point
 getPointsFromClaim claim =
-  let xs = claim.left..(claim.left + claim.width)
-      ys = claim.top..(claim.top + claim.width)
+  let xs = claim.left..(claim.left + claim.width - 1)
+      ys = claim.top..(claim.top + claim.height - 1)
       tupleToPoint :: (Tuple Int Int) -> Point
       tupleToPoint (Tuple x y) = Point { x: x, y: y }
   in

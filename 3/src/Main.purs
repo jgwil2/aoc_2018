@@ -2,16 +2,17 @@ module Main where
 
 import Prelude
 
-import Data.Array (concatMap, filter, group, length, sort, unsafeIndex, (..))
-import Data.Array.NonEmpty (length, toArray) as NEA
+import Data.Array (all, concatMap, elem, find, group, init, length, partition, sort, unsafeIndex, (..))
+import Data.Array.NonEmpty (head, length, toArray) as NEA
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
+import Data.Foldable (class Foldable)
 import Data.Int (fromString)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isNothing)
 import Data.String (Pattern(..), split)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Console (log)
 import Node.Encoding (Encoding(..))
@@ -21,11 +22,17 @@ import Partial.Unsafe (unsafePartial)
 main :: Effect Unit
 main = do
   text <- readFileAsUTF8 "day3.txt"
-  words <- pure $ splitTextByNewline text
+  words <- pure $ getSafeArray $ init $ splitTextByNewline text
   log "Part 1:"
   totalPoints <- pure $ concatMap getPointsFromString words
   groupedPoints <- pure $ group $ sort totalPoints
-  log $ show $ length $ filter (\x -> 1 /= NEA.length x) groupedPoints
+  repeatedPoints <- pure $ partition (\x -> 1 /= NEA.length x) groupedPoints
+  log $ show $ length $ repeatedPoints.yes
+  log "Part 2:"
+  claimsWithId <- pure $ map getPointsAndIdFromString words
+  log $ show $ getNonOverlappingClaimId claimsWithId (map NEA.head repeatedPoints.no)
+  -- log $ show claimsWithId
+  -- log $ show $ map NEA.head repeatedPoints.no
 
 readFileAsUTF8 :: String -> Effect String
 readFileAsUTF8 = readTextFile UTF8
@@ -60,6 +67,10 @@ getSafeNum Nothing = 0
 getSafeArrayfromNonEmpty :: ∀ a. Maybe (NonEmptyArray a) -> Array a
 getSafeArrayfromNonEmpty (Just xs) = NEA.toArray xs
 getSafeArrayfromNonEmpty Nothing = []
+
+getSafeArray :: ∀ a. Maybe (Array a) -> Array a
+getSafeArray (Just xs) = xs
+getSafeArray Nothing = []
 
 fromStringSafe :: String -> Int
 fromStringSafe = getSafeNum <<< fromString
@@ -106,8 +117,23 @@ getPointsFromClaim claim =
   in
       map tupleToPoint $ cartesianProd xs ys
 
-cartesianProd :: ∀ f a b. Bind f => Applicative f => f a -> f b -> f (Tuple a b)
+cartesianProd :: ∀ getNonOverlappingClaimId a b. Bind getNonOverlappingClaimId => Applicative getNonOverlappingClaimId => getNonOverlappingClaimId a -> getNonOverlappingClaimId b -> getNonOverlappingClaimId (Tuple a b)
 cartesianProd xs ys = do
   x <- xs
   y <- ys
   pure $ (Tuple x y)
+
+-- get all points by claim w/ id, then get all points that are repeated,
+-- then find the claim which contains only non-repeated points
+getPointsAndIdFromClaim :: Claim -> (Tuple ID (Array Point))
+getPointsAndIdFromClaim c = (Tuple c.id (getPointsFromClaim c))
+
+getPointsAndIdFromString :: String -> Tuple Int (Array Point)
+getPointsAndIdFromString = getPointsAndIdFromClaim <<< getClaimFromArray
+  <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchRecord
+
+getNonOverlappingClaimId :: Array (Tuple Int (Array Point)) -> Array Point -> Maybe Int
+getNonOverlappingClaimId cs ps = map fst $ find (\c -> containsOnly (snd c) ps) cs
+
+containsOnly :: forall f g a. Foldable g => Foldable f => Eq a => g a -> f a -> Boolean
+containsOnly xs ys = all (\x -> elem x ys) xs

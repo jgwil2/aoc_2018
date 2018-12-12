@@ -1,4 +1,9 @@
-module Main where
+module Day1
+(
+  part1,
+  part2
+)
+where
 
 import Prelude
 
@@ -7,22 +12,15 @@ import Data.Foldable (class Foldable, find, foldl, sum)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), isJust)
 import Data.String (Pattern(..), split)
-import Effect (Effect)
-import Effect.Console (log)
-import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile)
 
-main :: Effect Unit
-main = do
-  text <- readFileAsUTF8 "day1.txt"
-  nums <- pure ((map fromStringSafe <<< splitTextByNewline) text)
-  log "Part 1:"
-  log $ show $ sum nums
-  log "Part 2:"
-  log $ show $ getFirstRepeating (getRunningTotal nums [0])
+part1 :: String -> String
+part1 text = show $ sum $ getNums text
 
-readFileAsUTF8 :: String -> Effect String
-readFileAsUTF8 = readTextFile UTF8
+part2 :: String -> String
+part2 text = show $ getFirstRepeating (getRunningTotal (getNums text) [0])
+
+getNums :: String -> Array Int
+getNums = map fromStringSafe <<< splitTextByNewline
 
 splitTextByNewline :: String -> Array String
 splitTextByNewline = split (Pattern "\n")

@@ -1,4 +1,9 @@
-module Main where
+module Day3
+(
+  part1,
+  part2
+)
+where
 
 import Prelude
 
@@ -7,35 +12,30 @@ import Data.Array.NonEmpty (head, length, toArray) as NEA
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
 import Data.Foldable (class Foldable)
 import Data.Int (fromString)
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..), fst, snd)
-import Effect (Effect)
-import Effect.Console (log)
-import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile)
 import Partial.Unsafe (unsafePartial)
 
-main :: Effect Unit
-main = do
-  text <- readFileAsUTF8 "day3.txt"
-  words <- pure $ getSafeArray $ init $ splitTextByNewline text
-  log "Part 1:"
-  totalPoints <- pure $ concatMap getPointsFromString words
-  groupedPoints <- pure $ group $ sort totalPoints
-  repeatedPoints <- pure $ partition (\x -> 1 /= NEA.length x) groupedPoints
-  log $ show $ length $ repeatedPoints.yes
-  log "Part 2:"
-  claimsWithId <- pure $ map getPointsAndIdFromString words
-  log $ show $ getNonOverlappingClaimId claimsWithId (map NEA.head repeatedPoints.no)
-  -- log $ show claimsWithId
-  -- log $ show $ map NEA.head repeatedPoints.no
+part1 :: String -> String
+part1 text = show $ length $ repeatedPoints.yes
+  where
+    words = getSafeArray $ init $ splitTextByNewline text
+    totalPoints = concatMap getPointsFromString words
+    groupedPoints = group $ sort totalPoints
+    repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
-readFileAsUTF8 :: String -> Effect String
-readFileAsUTF8 = readTextFile UTF8
+part2 :: String -> String
+part2 text = show $ getNonOverlappingClaimId claimsWithId (map NEA.head repeatedPoints.no)
+  where
+    words = getSafeArray $ init $ splitTextByNewline text
+    claimsWithId = map getPointsAndIdFromString words
+    totalPoints = concatMap getPointsFromString words
+    groupedPoints = group $ sort totalPoints
+    repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
 splitTextByNewline :: String -> Array String
 splitTextByNewline = split (Pattern "\n")

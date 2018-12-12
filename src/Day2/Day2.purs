@@ -1,4 +1,9 @@
-module Main where
+module Day2
+(
+  part1,
+  part2
+)
+where
 
 import Prelude
 
@@ -6,23 +11,16 @@ import Data.Array (filter, groupBy, length, sort, zip)
 import Data.Array.NonEmpty (NonEmptyArray, length) as NEA
 import Data.String (Pattern(..), joinWith, split)
 import Data.Tuple (Tuple(..), fst, snd)
-import Effect (Effect)
-import Effect.Class.Console (log)
-import Node.Encoding (Encoding(..))
-import Node.FS.Sync (readTextFile)
 
-main :: Effect Unit
-main = do
-  text <- readFileAsUTF8 "day2.txt"
-  words <- pure (splitTextByNewline text)
-  log "Part 1:"
-  log $ show $ (getNumberOfWordsContainingXLetters 2 words) * (getNumberOfWordsContainingXLetters 3 words)
-  log "Part 2:"
-  log $ show $ map (joinWith "") $ map fst $ filter (\x -> arraysDifferByOne (fst x) (snd x)) $ cartesianProdSelf $ map wordToArray words
+part1 :: String -> String
+part1 text = show $ (getNumberOfWordsContainingXLetters 2 words) * (getNumberOfWordsContainingXLetters 3 words)
+  where
+    words = splitTextByNewline text
 
-
-readFileAsUTF8 :: String -> Effect String
-readFileAsUTF8 = readTextFile UTF8
+part2 :: String -> String
+part2 text = show $ map (joinWith "") $ map fst $ filter (\x -> arraysDifferByOne (fst x) (snd x)) $ cartesianProdSelf $ map wordToArray words
+  where
+    words = splitTextByNewline text
 
 splitTextByNewline :: String -> Array String
 splitTextByNewline = split (Pattern "\n")

@@ -11,14 +11,13 @@ import Data.Array (all, concatMap, elem, find, group, init, length, partition, s
 import Data.Array.NonEmpty (head, length, toArray) as NEA
 import Data.Array.NonEmpty.Internal (NonEmptyArray)
 import Data.Foldable (class Foldable)
-import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
-import Data.String (Pattern(..), split)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
+import Utilities (fromStringSafe, getSafeArray, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
 part1 text = show $ length $ repeatedPoints.yes
@@ -37,9 +36,6 @@ part2 text = show $ getNonOverlappingClaimId claimsWithId (map NEA.head repeated
     groupedPoints = group $ sort totalPoints
     repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
-splitTextByNewline :: String -> Array String
-splitTextByNewline = split (Pattern "\n")
-
 type ID = Int
 
 type Claim = {
@@ -56,24 +52,9 @@ recordPattern = unsafeRegex "^#([0-9]*) @ ([0-9]*),([0-9]*): ([0-9]*)x([0-9]*)$"
 matchRecord :: String -> Maybe (NonEmptyArray (Maybe String))
 matchRecord = match recordPattern
 
-getSafeString :: Maybe String -> String
-getSafeString (Just x) = x
-getSafeString Nothing = ""
-
-getSafeNum :: Maybe Int -> Int
-getSafeNum (Just x) = x
-getSafeNum Nothing = 0
-
 getSafeArrayfromNonEmpty :: ∀ a. Maybe (NonEmptyArray a) -> Array a
 getSafeArrayfromNonEmpty (Just xs) = NEA.toArray xs
 getSafeArrayfromNonEmpty Nothing = []
-
-getSafeArray :: ∀ a. Maybe (Array a) -> Array a
-getSafeArray (Just xs) = xs
-getSafeArray Nothing = []
-
-fromStringSafe :: String -> Int
-fromStringSafe = getSafeNum <<< fromString
 
 getPointsFromString :: String -> Array Point
 getPointsFromString =

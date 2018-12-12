@@ -11,6 +11,7 @@ import Data.Array (filter, groupBy, length, sort, zip)
 import Data.Array.NonEmpty (NonEmptyArray, length) as NEA
 import Data.String (Pattern(..), joinWith, split)
 import Data.Tuple (Tuple(..), fst, snd)
+import Utilities (splitTextByNewline)
 
 part1 :: String -> String
 part1 text = show $ (getNumberOfWordsContainingXLetters 2 words) * (getNumberOfWordsContainingXLetters 3 words)
@@ -21,9 +22,6 @@ part2 :: String -> String
 part2 text = show $ map (joinWith "") $ map fst $ filter (\x -> arraysDifferByOne (fst x) (snd x)) $ cartesianProdSelf $ map wordToArray words
   where
     words = splitTextByNewline text
-
-splitTextByNewline :: String -> Array String
-splitTextByNewline = split (Pattern "\n")
 
 containsXOfAnyLetter :: Int -> String -> Boolean
 containsXOfAnyLetter x str =

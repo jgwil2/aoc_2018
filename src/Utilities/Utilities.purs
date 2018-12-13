@@ -2,6 +2,7 @@ module Utilities where
 
 import Prelude
 
+import Data.Array.NonEmpty (NonEmptyArray, toArray) as NEA
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split)
@@ -18,12 +19,16 @@ getSafeNum :: Maybe Int -> Int
 getSafeNum (Just x) = x
 getSafeNum Nothing = 0
 
+fromStringSafe :: String -> Int
+fromStringSafe = getSafeNum <<< fromString
+
 getSafeArray :: ∀ a. Maybe (Array a) -> Array a
 getSafeArray (Just xs) = xs
 getSafeArray Nothing = []
 
-fromStringSafe :: String -> Int
-fromStringSafe = getSafeNum <<< fromString
+getSafeArrayfromNonEmpty :: ∀ a. Maybe (NEA.NonEmptyArray a) -> Array a
+getSafeArrayfromNonEmpty (Just xs) = NEA.toArray xs
+getSafeArrayfromNonEmpty Nothing = []
 
 -- NOTE: tried to give this function the most general type signature
 -- possible, but it may be misnamed as a result. Does Cartesian product

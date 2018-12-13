@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import Day2 (part1, part2)
+import Day4 (part1)
 import Effect (Effect)
 import Effect.Console (log)
 import Node.Encoding (Encoding(..))
@@ -22,4 +22,4 @@ main = mainWith myFunction
             [_, _, input] -> interactWith function input
             _ -> log "error: exactly one argument needed"
 
-        myFunction = part2
+        myFunction = part1

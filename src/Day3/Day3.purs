@@ -8,16 +8,15 @@ where
 import Prelude
 
 import Data.Array (all, concatMap, elem, find, group, init, length, partition, sort, unsafeIndex, (..))
-import Data.Array.NonEmpty (head, length, toArray) as NEA
-import Data.Array.NonEmpty.Internal (NonEmptyArray)
+import Data.Array.NonEmpty (NonEmptyArray, head, length) as NEA
 import Data.Foldable (class Foldable)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..), fst, snd)
 import Partial.Unsafe (unsafePartial)
-import Utilities (fromStringSafe, getSafeArray, getSafeString, splitTextByNewline)
+import Utilities (fromStringSafe, getSafeArray, getSafeArrayfromNonEmpty, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
 part1 text = show $ length $ repeatedPoints.yes
@@ -49,12 +48,8 @@ type Claim = {
 recordPattern :: Regex
 recordPattern = unsafeRegex "^#([0-9]*) @ ([0-9]*),([0-9]*): ([0-9]*)x([0-9]*)$" noFlags
 
-matchRecord :: String -> Maybe (NonEmptyArray (Maybe String))
+matchRecord :: String -> Maybe (NEA.NonEmptyArray (Maybe String))
 matchRecord = match recordPattern
-
-getSafeArrayfromNonEmpty :: ∀ a. Maybe (NonEmptyArray a) -> Array a
-getSafeArrayfromNonEmpty (Just xs) = NEA.toArray xs
-getSafeArrayfromNonEmpty Nothing = []
 
 getPointsFromString :: String -> Array Point
 getPointsFromString =

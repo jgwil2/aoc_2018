@@ -27,13 +27,11 @@ part1 text = show $ length $ repeatedPoints.yes
     repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
 part2 :: String -> String
-part2 text = show $ getNonOverlappingClaimId claimsWithId (map NEA.head repeatedPoints.no)
+part2 text = show $ length rects
   where
     words = getSafeArray $ init $ splitTextByNewline text
-    claimsWithId = map getPointsAndIdFromString words
-    totalPoints = concatMap getPointsFromString words
-    groupedPoints = group $ sort totalPoints
-    repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
+    rects = map getRectsFromString words
+    -- TODO for all rectangles, check if they overlap with any others
 
 type ID = Int
 
@@ -43,26 +41,6 @@ type Claim = {
   top :: Int,
   width :: Int,
   height :: Int
-}
-
-recordPattern :: Regex
-recordPattern = unsafeRegex "^#([0-9]*) @ ([0-9]*),([0-9]*): ([0-9]*)x([0-9]*)$" noFlags
-
-matchRecord :: String -> Maybe (NEA.NonEmptyArray (Maybe String))
-matchRecord = match recordPattern
-
-getPointsFromString :: String -> Array Point
-getPointsFromString =
-  getPointsFromClaim <<< getClaimFromArray <<< map getSafeString <<<
-  getSafeArrayfromNonEmpty <<< matchRecord
-
-getClaimFromArray :: Array String -> Claim
-getClaimFromArray xs = {
-  id: fromStringSafe (unsafePartial $ unsafeIndex xs 1),
-  left: fromStringSafe (unsafePartial $ unsafeIndex xs 2),
-  top: fromStringSafe (unsafePartial $ unsafeIndex xs 3),
-  width: fromStringSafe (unsafePartial $ unsafeIndex xs 4),
-  height: fromStringSafe (unsafePartial $ unsafeIndex xs 5)
 }
 
 data Point = Point {
@@ -84,6 +62,37 @@ instance ordPoint :: Ord Point where
     | p.x == q.x && p.y < q.y = LT
   compare _ _ = EQ
 
+data Rect = Rect {
+  upperLeft :: Point,
+  upperRight :: Point,
+  lowerLeft :: Point,
+  lowerRight :: Point
+}
+
+instance showRect :: Show Rect where
+  show (Rect r) = "(Rect " <> show r.upperLeft <> ", " <> show r.upperRight
+                  <> ",\r\n" <> show r.lowerLeft <> ", " <> show r.lowerRight
+
+recordPattern :: Regex
+recordPattern = unsafeRegex "^#([0-9]*) @ ([0-9]*),([0-9]*): ([0-9]*)x([0-9]*)$" noFlags
+
+matchRecord :: String -> Maybe (NEA.NonEmptyArray (Maybe String))
+matchRecord = match recordPattern
+
+getPointsFromString :: String -> Array Point
+getPointsFromString =
+  getPointsFromClaim <<< getClaimFromArray <<< map getSafeString <<<
+  getSafeArrayfromNonEmpty <<< matchRecord
+
+getClaimFromArray :: Array String -> Claim
+getClaimFromArray xs = {
+  id: fromStringSafe (unsafePartial $ unsafeIndex xs 1),
+  left: fromStringSafe (unsafePartial $ unsafeIndex xs 2),
+  top: fromStringSafe (unsafePartial $ unsafeIndex xs 3),
+  width: fromStringSafe (unsafePartial $ unsafeIndex xs 4),
+  height: fromStringSafe (unsafePartial $ unsafeIndex xs 5)
+}
+
 getPointsFromClaim :: Claim -> Array Point
 getPointsFromClaim claim =
   let xs = claim.left..(claim.left + claim.width - 1)
@@ -99,17 +108,27 @@ cartesianProd xs ys = do
   y <- ys
   pure $ (Tuple x y)
 
--- get all points by claim w/ id, then get all points that are repeated,
--- then find the claim which contains only non-repeated points
-getPointsAndIdFromClaim :: Claim -> (Tuple ID (Array Point))
-getPointsAndIdFromClaim c = (Tuple c.id (getPointsFromClaim c))
+getRectFromClaim :: Claim -> Rect
+getRectFromClaim claim =
+  Rect {
+    upperLeft: Point {
+      x: claim.left,
+      y: claim.top
+    },
+    upperRight: Point {
+      x: claim.left + claim.width,
+      y: claim.top
+    },
+    lowerLeft: Point {
+      x: claim.left,
+      y: claim.top + claim.height
+    },
+    lowerRight: Point {
+      x: claim.left + claim.width,
+      y: claim.top + claim.height
+    }
+  }
 
-getPointsAndIdFromString :: String -> Tuple Int (Array Point)
-getPointsAndIdFromString = getPointsAndIdFromClaim <<< getClaimFromArray
-  <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchRecord
-
-getNonOverlappingClaimId :: Array (Tuple Int (Array Point)) -> Array Point -> Maybe Int
-getNonOverlappingClaimId cs ps = map fst $ find (\c -> containsOnly (snd c) ps) cs
-
-containsOnly :: forall f g a. Foldable g => Foldable f => Eq a => g a -> f a -> Boolean
-containsOnly xs ys = all (\x -> elem x ys) xs
+getRectsFromString :: String -> Rect
+getRectsFromString = getRectFromClaim <<< getClaimFromArray <<<
+  map getSafeString <<< getSafeArrayfromNonEmpty <<< matchRecord

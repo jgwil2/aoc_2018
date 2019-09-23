@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import Day3 (part1, part2)
+import Day1 (part1, part2)
 import Effect (Effect)
 import Effect.Console (log)
 import Node.Encoding (Encoding(..))

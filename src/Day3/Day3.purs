@@ -7,10 +7,9 @@ where
 
 import Prelude
 
-import Data.Array (all, concatMap, elem, filter, find, group, init, length, partition, sort, unsafeIndex, (..))
-import Data.Array.NonEmpty (NonEmptyArray, head, length) as NEA
-import Data.Foldable (class Foldable, foldl)
-import Data.Maybe (Maybe, isJust, isNothing)
+import Data.Array (concatMap, filter, group, init, length, partition, sort, unsafeIndex, (..))
+import Data.Array.NonEmpty (NonEmptyArray, length) as NEA
+import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
@@ -27,13 +26,18 @@ part1 text = show $ length $ repeatedPoints.yes
     repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
 part2 :: String -> String
-part2 text = show $ length sol
+part2 text = show $ solution
   where
     words = getSafeArray $ init $ splitTextByNewline text
     rectsWithIds = map getRectsFromString words
     rects = map (\r -> snd r) rectsWithIds
-    -- TODO for all rectangles, check if they overlap with any others
-    sol = filter (\v -> isJust $ snd v) $ map (\r -> (Tuple (fst r) (findNonOverlappingRect (snd r) rects))) rectsWithIds
+    -- for all claims, check if they overlap with any others and build
+    -- a list of every overlapping claim for each claim
+    claimsWithOverlapping = map (\r -> (Tuple (fst r) (findOverlappingRects (snd r) rects))) rectsWithIds
+    -- because we compare each claim against the total list, every claim
+    -- will overlap with at least one other claim (itself)
+    -- the claim that only overlaps with itself is the solution
+    solution = filter (\v -> length (snd v) == 1) claimsWithOverlapping
 
 type ID = Int
 
@@ -117,10 +121,15 @@ getRectsFromString :: String -> (Tuple ID Rect)
 getRectsFromString = (\c -> (Tuple c.id (getRectFromClaim c))) <<< getClaimFromArray <<<
   map getSafeString <<< getSafeArrayfromNonEmpty <<< matchRecord
 
+-- cf. https://stackoverflow.com/questions/306316/determine-if-two-rectangles-overlap-each-other
+-- note that the solution given above is for a standard cartesian plane;
+-- since in our case y increases from top to bottom, the comparators for
+-- y coordinates are reversed
 rectsOverlap :: Rect -> Rect -> Boolean
-rectsOverlap r s = r.lowerRight.y > s.upperLeft.y && r.lowerRight.x > s.upperLeft.x
+rectsOverlap r s = r.upperLeft.x < s.lowerRight.x && r.lowerRight.x > s.upperLeft.x
+  && r.upperLeft.y < s.lowerRight.y && r.lowerRight.y > s.upperLeft.y
 
--- given a rectangle and an array of rectangles, find a rectangle in the
--- array that does not overlap with the given rectangle
-findNonOverlappingRect :: Rect -> Array Rect -> Maybe Rect
-findNonOverlappingRect r rs = find (not rectsOverlap r) rs
+-- given a rectangle and an array of rectangles, find all rectangles in
+-- the array that overlap with the given rectangle
+findOverlappingRects :: Rect -> Array Rect -> Array Rect
+findOverlappingRects r rs = filter (rectsOverlap r) rs

@@ -7,10 +7,10 @@ where
 
 import Prelude
 
-import Data.Array (all, concatMap, elem, find, group, init, length, partition, sort, unsafeIndex, (..))
+import Data.Array (all, concatMap, elem, filter, find, group, init, length, partition, sort, unsafeIndex, (..))
 import Data.Array.NonEmpty (NonEmptyArray, head, length) as NEA
-import Data.Foldable (class Foldable)
-import Data.Maybe (Maybe)
+import Data.Foldable (class Foldable, foldl)
+import Data.Maybe (Maybe, isJust, isNothing)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
@@ -27,11 +27,13 @@ part1 text = show $ length $ repeatedPoints.yes
     repeatedPoints = partition (\x -> 1 /= NEA.length x) groupedPoints
 
 part2 :: String -> String
-part2 text = show $ length rects
+part2 text = show $ length sol
   where
     words = getSafeArray $ init $ splitTextByNewline text
-    rects = map getRectsFromString words
+    rectsWithIds = map getRectsFromString words
+    rects = map (\r -> snd r) rectsWithIds
     -- TODO for all rectangles, check if they overlap with any others
+    sol = filter (\v -> isJust $ snd v) $ map (\r -> (Tuple (fst r) (findNonOverlappingRect (snd r) rects))) rectsWithIds
 
 type ID = Int
 
@@ -43,35 +45,17 @@ type Claim = {
   height :: Int
 }
 
-data Point = Point {
+type Point = {
   x :: Int,
   y :: Int
 }
 
-instance showPoint :: Show Point where
-  show (Point p) = "(Point " <> show p.x <> ", " <> show p.y <> ")"
-
-instance eqPoint :: Eq Point where
-  eq (Point p) (Point q) = p.x == q.x && p.y == q.y
-
-instance ordPoint :: Ord Point where
-  compare (Point p) (Point q)
-    | p.x > q.x = GT
-    | p.x < q.x = LT
-    | p.x == q.x && p.y > q.y = GT
-    | p.x == q.x && p.y < q.y = LT
-  compare _ _ = EQ
-
-data Rect = Rect {
+type Rect = {
   upperLeft :: Point,
   upperRight :: Point,
   lowerLeft :: Point,
   lowerRight :: Point
 }
-
-instance showRect :: Show Rect where
-  show (Rect r) = "(Rect " <> show r.upperLeft <> ", " <> show r.upperRight
-                  <> ",\r\n" <> show r.lowerLeft <> ", " <> show r.lowerRight
 
 recordPattern :: Regex
 recordPattern = unsafeRegex "^#([0-9]*) @ ([0-9]*),([0-9]*): ([0-9]*)x([0-9]*)$" noFlags
@@ -98,7 +82,7 @@ getPointsFromClaim claim =
   let xs = claim.left..(claim.left + claim.width - 1)
       ys = claim.top..(claim.top + claim.height - 1)
       tupleToPoint :: (Tuple Int Int) -> Point
-      tupleToPoint (Tuple x y) = Point { x: x, y: y }
+      tupleToPoint (Tuple x y) = { x: x, y: y }
   in
       map tupleToPoint $ cartesianProd xs ys
 
@@ -110,25 +94,33 @@ cartesianProd xs ys = do
 
 getRectFromClaim :: Claim -> Rect
 getRectFromClaim claim =
-  Rect {
-    upperLeft: Point {
+  {
+    upperLeft: {
       x: claim.left,
       y: claim.top
     },
-    upperRight: Point {
+    upperRight: {
       x: claim.left + claim.width,
       y: claim.top
     },
-    lowerLeft: Point {
+    lowerLeft: {
       x: claim.left,
       y: claim.top + claim.height
     },
-    lowerRight: Point {
+    lowerRight: {
       x: claim.left + claim.width,
       y: claim.top + claim.height
     }
   }
 
-getRectsFromString :: String -> Rect
-getRectsFromString = getRectFromClaim <<< getClaimFromArray <<<
+getRectsFromString :: String -> (Tuple ID Rect)
+getRectsFromString = (\c -> (Tuple c.id (getRectFromClaim c))) <<< getClaimFromArray <<<
   map getSafeString <<< getSafeArrayfromNonEmpty <<< matchRecord
+
+rectsOverlap :: Rect -> Rect -> Boolean
+rectsOverlap r s = r.lowerRight.y > s.upperLeft.y && r.lowerRight.x > s.upperLeft.x
+
+-- given a rectangle and an array of rectangles, find a rectangle in the
+-- array that does not overlap with the given rectangle
+findNonOverlappingRect :: Rect -> Array Rect -> Maybe Rect
+findNonOverlappingRect r rs = find (not rectsOverlap r) rs

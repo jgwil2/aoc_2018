@@ -5,6 +5,7 @@ import Prelude
 import Data.Array (init)
 import Data.Array.NonEmpty (NonEmptyArray, toArray) as NEA
 import Data.Int (fromString)
+import Data.List (List, fromFoldable)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split)
 import Data.Tuple (Tuple(..))
@@ -42,3 +43,7 @@ cartesianProd xs ys = do
 
 cartesianProdSelf :: ∀ f a. Bind f => Applicative f => f a -> f (Tuple a a)
 cartesianProdSelf xs = cartesianProd xs xs
+
+-- TODO find out how this works!
+arrayToList :: forall a. Array a -> List a
+arrayToList = fromFoldable

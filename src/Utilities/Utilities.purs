@@ -2,6 +2,7 @@ module Utilities where
 
 import Prelude
 
+import Data.Array (init)
 import Data.Array.NonEmpty (NonEmptyArray, toArray) as NEA
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
@@ -9,7 +10,7 @@ import Data.String (Pattern(..), split)
 import Data.Tuple (Tuple(..))
 
 splitTextByNewline :: String -> Array String
-splitTextByNewline = split (Pattern "\n")
+splitTextByNewline s = getSafeArray $ init $ split (Pattern "\n") s
 
 getSafeString :: Maybe String -> String
 getSafeString (Just x) = x

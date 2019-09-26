@@ -2,7 +2,7 @@ module Day4 where
 
 import Prelude
 
-import Data.Array (init, unsafeIndex)
+import Data.Array (head, init, sortBy, unsafeIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match)
@@ -12,7 +12,15 @@ import Partial.Unsafe (unsafePartial)
 import Utilities (fromStringSafe, getSafeArray, getSafeArrayfromNonEmpty, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
-part1 text = show $ map (getSleepRecordFromArray <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchSleepRecord) $ getSafeArray $ init $ splitTextByNewline text
+part1 text = show $ sortedRecords
+  where
+    words = splitTextByNewline text
+    getSleepRecord = getSleepRecordFromArray <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchSleepRecord
+    records = map getSleepRecord words
+    sortedRecords = sortBy compareSleepRecordDate records
+
+part2 :: String -> String
+part2 text = show text
 
 type SleepRecord = {
   year :: Int,
@@ -38,3 +46,17 @@ getSleepRecordFromArray xs = {
   minute: fromStringSafe (unsafePartial $ unsafeIndex xs 5),
   message: (unsafePartial $ unsafeIndex xs 6)
 }
+
+-- HACK: syntactic contortions abound: see
+-- https://github.com/purescript/purescript/issues/888
+compareSleepRecordDate :: SleepRecord -> SleepRecord -> Ordering
+compareSleepRecordDate r1 r2 =
+  let monthsComp = compare r1.month r2.month
+      daysComp = compare r1.day r2.day
+      hoursComp = compare r1.hour r2.hour
+      minutesComp = compare r1.minute r2.minute
+  in case unit of
+    _ | monthsComp /= EQ -> monthsComp
+    _ | daysComp /= EQ -> daysComp
+    _ | hoursComp /= EQ -> hoursComp
+    _ | otherwise -> minutesComp

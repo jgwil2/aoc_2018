@@ -2,25 +2,22 @@ module Day4 where
 
 import Prelude
 
-import Data.Array (elemIndex, groupBy, init, sortBy, unsafeIndex, (:))
+import Data.Array (sortBy, unsafeIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
-import Data.List (List(..), head)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Utilities (arrayToList, fromStringSafe, getSafeArray, getSafeArrayfromNonEmpty, getSafeNum, getSafeString, splitTextByNewline)
+import Utilities (fromStringSafe, getSafeArrayfromNonEmpty, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
-part1 text = show $ head splitRecords
+part1 text = show $ sortedRecords
   where
     words = splitTextByNewline text
     getSleepRecord = getSleepRecordFromArray <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchSleepRecord
     records = map getSleepRecord words
     sortedRecords = sortBy compareSleepRecordDate records
-    splitRecords = splitEvery 3 (arrayToList sortedRecords)
 
 part2 :: String -> String
 part2 text = show text
@@ -64,25 +61,8 @@ compareSleepRecordDate r1 r2 =
     _ | hoursComp /= EQ -> hoursComp
     _ | otherwise -> minutesComp
 
-
--- FIXME can this really not be made to work with arrays?
--- NOTE implementation cribbed from:
--- https://codereview.stackexchange.com/questions/48552/split-list-into-groups-of-n-in-haskell
-splitEvery :: forall a. Int -> List a -> List (List a)
-splitEvery _ Nil = Nil
-splitEvery n xs = (Cons as) $ splitEvery n bs
-  where (Tuple as bs) = splitAt n xs
-
--- NOTE implementation cribbed from:
--- https://hackage.haskell.org/package/base-4.12.0.0/docs/src/GHC.List.html#splitAt
-splitAt :: forall a. Int -> List a -> Tuple (List a) (List a)
-splitAt n ls
-  | n <= 0 = (Tuple Nil ls)
-  | otherwise          = splitAt' n ls
-    where
-        splitAt' :: forall b. Int -> List b -> (Tuple (List b) (List b))
-        splitAt' _  Nil     = (Tuple Nil Nil)
-        splitAt' 1  (Cons x xs) = (Tuple ((Cons x) Nil) xs)
-        splitAt' m  (Cons x xs) = (Tuple ((Cons x) xs') xs'')
-          where
-            (Tuple xs' xs'') = splitAt' (m - 1) xs
+type GuardAndSleepTimes = {
+  id :: Int,
+  wentToSleep :: Int,
+  wokeUp :: Int
+}

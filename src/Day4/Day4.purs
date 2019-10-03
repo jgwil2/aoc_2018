@@ -2,17 +2,17 @@ module Day4 where
 
 import Prelude
 
-import Data.Array (sortBy, unsafeIndex)
+import Data.Array (filter, head, sortBy, span, unsafeIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Maybe (Maybe)
-import Data.String.Regex (Regex, match)
+import Data.String.Regex (Regex, match, test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Partial.Unsafe (unsafePartial)
 import Utilities (fromStringSafe, getSafeArrayfromNonEmpty, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
-part1 text = show $ sortedRecords
+part1 text = show $ map getGuardIDFromBeginShiftRec $ filter isBeginShiftRec sortedRecords
   where
     words = splitTextByNewline text
     getSleepRecord = getSleepRecordFromArray <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchSleepRecord
@@ -66,3 +66,21 @@ type GuardAndSleepTimes = {
   wentToSleep :: Int,
   wokeUp :: Int
 }
+
+-- getGuardAndSleepTimes :: Array SleepRecord -> Array GuardAndSleepTimes
+-- getGuardAndSleepTimes [] = []
+-- TODO recursive function which passes guard id as parameter and uses
+-- span (?) to grab all successive records until another guard id is
+-- found, then calls itself with the new guard id and (init spanned.rest)
+
+beginShiftPattern :: Regex
+beginShiftPattern = unsafeRegex "Guard #([0-9]+) begins shift" noFlags
+
+isBeginShiftRec :: SleepRecord -> Boolean
+isBeginShiftRec rec = test beginShiftPattern rec.message
+
+getGuardIDFromBeginShiftRec :: SleepRecord -> Int
+getGuardIDFromBeginShiftRec rec =
+  let matches = match beginShiftPattern rec.message
+  in
+    fromStringSafe (unsafePartial $ unsafeIndex (map getSafeString $ getSafeArrayfromNonEmpty matches) 1)

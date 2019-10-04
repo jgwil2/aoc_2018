@@ -2,17 +2,19 @@ module Day4 where
 
 import Prelude
 
-import Data.Array (filter, head, sortBy, span, unsafeIndex)
+import Data.Array (filter, head, sortBy, unsafeIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
+import Data.List (List(..), concat, span)
+import Data.Map (Map, empty, insert, lookup, member)
 import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match, test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Partial.Unsafe (unsafePartial)
-import Utilities (fromStringSafe, getSafeArrayfromNonEmpty, getSafeString, splitTextByNewline)
+import Utilities (arrayToList, fromStringSafe, getSafeArrayfromNonEmpty, getSafeList, getSafeString, splitTextByNewline)
 
 part1 :: String -> String
-part1 text = show $ map getGuardIDFromBeginShiftRec $ filter isBeginShiftRec sortedRecords
+part1 text = show $ buildMap empty $ arrayToList sortedRecords
   where
     words = splitTextByNewline text
     getSleepRecord = getSleepRecordFromArray <<< map getSafeString <<< getSafeArrayfromNonEmpty <<< matchSleepRecord
@@ -67,11 +69,25 @@ type GuardAndSleepTimes = {
   wokeUp :: Int
 }
 
--- getGuardAndSleepTimes :: Array SleepRecord -> Array GuardAndSleepTimes
--- getGuardAndSleepTimes [] = []
--- TODO recursive function which passes guard id as parameter and uses
--- span (?) to grab all successive records until another guard id is
--- found, then calls itself with the new guard id and (init spanned.rest)
+buildMap :: Map Int (List SleepRecord) -> List SleepRecord -> Map Int (List SleepRecord)
+buildMap recordsMap Nil = recordsMap
+buildMap recordsMap (Cons rec recs) =
+  let vals = span (not isBeginShiftRec) recs
+      id = getGuardIDFromBeginShiftRec rec
+      newMap = insertOrConcat id vals.init recordsMap
+  in
+    buildMap newMap vals.rest
+
+insertOrConcat :: forall a. Int -> List a -> Map Int (List a) -> Map Int (List a)
+insertOrConcat id vals recordsMap = if member id recordsMap
+  then insert id concatenatedList recordsMap
+  else insert id vals recordsMap
+  where
+    currentVals = lookupSafe id recordsMap
+    concatenatedList = concat (Cons currentVals (Cons vals Nil))
+
+lookupSafe :: forall a b. Ord a => a -> Map a (List b) -> List b
+lookupSafe k m = getSafeList $ lookup k m
 
 beginShiftPattern :: Regex
 beginShiftPattern = unsafeRegex "Guard #([0-9]+) begins shift" noFlags

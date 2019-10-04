@@ -4,12 +4,13 @@ import Prelude
 
 import Data.Array (filter, head, sortBy, unsafeIndex)
 import Data.Array.NonEmpty (NonEmptyArray)
-import Data.List (List(..), concat, span)
+import Data.List (List(..), concat, partition, span, zip, (..))
 import Data.Map (Map, empty, insert, lookup, member)
 import Data.Maybe (Maybe)
 import Data.String.Regex (Regex, match, test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
+import Data.Tuple (fst, snd)
 import Partial.Unsafe (unsafePartial)
 import Utilities (arrayToList, fromStringSafe, getSafeArrayfromNonEmpty, getSafeList, getSafeString, splitTextByNewline)
 
@@ -63,12 +64,6 @@ compareSleepRecordDate r1 r2 =
     _ | hoursComp /= EQ -> hoursComp
     _ | otherwise -> minutesComp
 
-type GuardAndSleepTimes = {
-  id :: Int,
-  wentToSleep :: Int,
-  wokeUp :: Int
-}
-
 buildMap :: Map Int (List SleepRecord) -> List SleepRecord -> Map Int (List SleepRecord)
 buildMap recordsMap Nil = recordsMap
 buildMap recordsMap (Cons rec recs) =
@@ -100,3 +95,20 @@ getGuardIDFromBeginShiftRec rec =
   let matches = match beginShiftPattern rec.message
   in
     fromStringSafe (unsafePartial $ unsafeIndex (map getSafeString $ getSafeArrayfromNonEmpty matches) 1)
+
+-- buildMinutesCountMap :: Int -> List SleepRecord -> Map Int Int
+buildMinutesCountMap id records =
+  let lists = partition isWakeUpRec records
+      zipped = zip lists.yes lists.no
+      minutes = map (\r -> (fst r).minute..(snd r).minute) zipped
+  in
+-- TODO we have a map of all minutes slept as defined by each pair of
+-- records, now we build a map of each minute and increment the count
+-- if there is already a value for that minute, otherwise insert 1
+    minutes
+
+wakeUpPattern :: Regex
+wakeUpPattern = unsafeRegex "wakes up" noFlags
+
+isWakeUpRec :: SleepRecord -> Boolean
+isWakeUpRec rec = test beginShiftPattern rec.message
